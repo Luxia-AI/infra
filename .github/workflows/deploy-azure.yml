@@ -1,0 +1,144 @@
+# =============================================================================
+# Luxia Research Project - Azure App Service Deployment
+# =============================================================================
+# This workflow builds a unified Docker container containing all backend services
+# and deploys it to Azure App Service.
+#
+# Architecture:
+#   - Checks out multiple repos (socket-hub, dispatcher, worker, shared)
+#   - Builds single container with all services
+#   - Pushes to GitHub Container Registry (ghcr.io)
+#   - Deploys to Azure App Service (luxia-backend)
+#
+# Trigger: Push to main branch of infra repo
+# =============================================================================
+
+name: Deploy to Azure App Service
+
+on:
+  push:
+    branches:
+      - main
+    # Only trigger on changes to azure deployment files
+    paths:
+      - 'azure/**'
+      - '.github/workflows/deploy-azure.yml'
+  # Allow manual trigger for debugging
+  workflow_dispatch:
+
+env:
+  # Container registry settings
+  REGISTRY: ghcr.io
+  IMAGE_NAME: luxia-ai/luxia-dev-stack
+  # Azure settings
+  AZURE_WEBAPP_NAME: luxia-backend
+
+jobs:
+  build-and-deploy:
+    name: Build and Deploy
+    runs-on: ubuntu-latest
+    
+    # Required permissions for GHCR push and Azure deployment
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      # =========================================================================
+      # Checkout all required repositories
+      # =========================================================================
+      
+      - name: Checkout infra repository
+        uses: actions/checkout@v4
+        with:
+          path: infra
+
+      - name: Checkout socket-hub repository
+        uses: actions/checkout@v4
+        with:
+          repository: Luxia-AI/socket-hub
+          path: socket-hub
+          # Use default branch; change to specific branch if needed
+          ref: main
+
+      - name: Checkout dispatcher repository
+        uses: actions/checkout@v4
+        with:
+          repository: Luxia-AI/dispatcher
+          path: dispatcher
+          ref: main
+
+      - name: Checkout worker repository
+        uses: actions/checkout@v4
+        with:
+          repository: Luxia-AI/worker
+          path: worker
+          ref: main
+
+      - name: Checkout shared repository
+        uses: actions/checkout@v4
+        with:
+          repository: Luxia-AI/shared
+          path: shared
+          ref: main
+
+      # =========================================================================
+      # Build and push Docker image
+      # =========================================================================
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract metadata for Docker
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          tags: |
+            type=raw,value=latest
+            type=sha,prefix=,format=short
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v5
+        with:
+          # Build context is workspace root (contains all checked out repos)
+          context: .
+          file: infra/azure/Dockerfile
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          # Enable build cache for faster subsequent builds
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      # =========================================================================
+      # Deploy to Azure App Service
+      # =========================================================================
+
+      - name: Deploy to Azure App Service
+        uses: azure/webapps-deploy@v3
+        with:
+          app-name: ${{ env.AZURE_WEBAPP_NAME }}
+          publish-profile: ${{ secrets.AZURE_PUBLISH_PROFILE }}
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
+
+      # =========================================================================
+      # Post-deployment verification
+      # =========================================================================
+
+      - name: Output deployment info
+        run: |
+          echo "=========================================="
+          echo "Deployment Complete!"
+          echo "=========================================="
+          echo "Image: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest"
+          echo "App Service: ${{ env.AZURE_WEBAPP_NAME }}"
+          echo "Commit SHA: ${{ github.sha }}"
+          echo "=========================================="
