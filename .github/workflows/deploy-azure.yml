@@ -10,135 +10,158 @@
 #   - Pushes to GitHub Container Registry (ghcr.io)
 #   - Deploys to Azure App Service (luxia-backend)
 #
-# Trigger: Push to main branch of infra repo
+# Triggers:
+#   - Push to main branch of infra repo (azure/** or workflow changes)
+#   - repository_dispatch from service repos (socket-hub, dispatcher, worker)
+#   - Manual workflow_dispatch
 # =============================================================================
 
 name: Deploy to Azure App Service
 
 on:
-  push:
-    branches:
-      - main
-    # Only trigger on changes to azure deployment files
-    paths:
-      - 'azure/**'
-      - '.github/workflows/deploy-azure.yml'
-  # Allow manual trigger for debugging
-  workflow_dispatch:
+    push:
+        branches:
+            - main
+        paths:
+            - "azure/**"
+            - ".github/workflows/deploy-azure.yml"
+
+    # Triggered by service repos via repository_dispatch
+    repository_dispatch:
+        types: [service-updated]
+
+    # Allow manual trigger for debugging
+    workflow_dispatch:
+
+# Prevent overlapping deployments
+concurrency:
+    group: luxia-azure-deploy
+    cancel-in-progress: true
 
 env:
-  # Container registry settings
-  REGISTRY: ghcr.io
-  IMAGE_NAME: luxia-ai/luxia-dev-stack
-  # Azure settings
-  AZURE_WEBAPP_NAME: luxia-backend
+    # Container registry settings
+    REGISTRY: ghcr.io
+    IMAGE_NAME: luxia-ai/luxia-dev-stack
+    # Azure settings
+    AZURE_WEBAPP_NAME: luxia-backend
 
 jobs:
-  build-and-deploy:
-    name: Build and Deploy
-    runs-on: ubuntu-latest
-    
-    # Required permissions for GHCR push and Azure deployment
-    permissions:
-      contents: read
-      packages: write
+    build-and-deploy:
+        name: Build and Deploy
+        runs-on: ubuntu-latest
 
-    steps:
-      # =========================================================================
-      # Checkout all required repositories
-      # =========================================================================
-      
-      - name: Checkout infra repository
-        uses: actions/checkout@v4
-        with:
-          path: infra
+        # Required permissions for GHCR push and Azure deployment
+        permissions:
+            contents: read
+            packages: write
 
-      - name: Checkout socket-hub repository
-        uses: actions/checkout@v4
-        with:
-          repository: Luxia-AI/socket-hub
-          path: socket-hub
-          # Use default branch; change to specific branch if needed
-          ref: main
+        steps:
+            # =========================================================================
+            # Log trigger information
+            # =========================================================================
 
-      - name: Checkout dispatcher repository
-        uses: actions/checkout@v4
-        with:
-          repository: Luxia-AI/dispatcher
-          path: dispatcher
-          ref: main
+            - name: Log trigger source
+              run: |
+                  echo "=========================================="
+                  echo "Deployment Triggered"
+                  echo "=========================================="
+                  echo "Event: ${{ github.event_name }}"
+                  if [ "${{ github.event_name }}" = "repository_dispatch" ]; then
+                    echo "Service: ${{ github.event.client_payload.service }}"
+                    echo "Service SHA: ${{ github.event.client_payload.sha }}"
+                  fi
+                  echo "Run ID: ${{ github.run_id }}"
+                  echo "=========================================="
 
-      - name: Checkout worker repository
-        uses: actions/checkout@v4
-        with:
-          repository: Luxia-AI/worker
-          path: worker
-          ref: main
+            # =========================================================================
+            # Checkout all required repositories
+            # =========================================================================
 
-      - name: Checkout shared repository
-        uses: actions/checkout@v4
-        with:
-          repository: Luxia-AI/shared
-          path: shared
-          ref: main
+            - name: Checkout infra repository
+              uses: actions/checkout@v4
+              with:
+                  path: infra
 
-      # =========================================================================
-      # Build and push Docker image
-      # =========================================================================
+            - name: Checkout socket-hub repository
+              uses: actions/checkout@v4
+              with:
+                  repository: Luxia-AI/socket-hub
+                  path: socket-hub
+                  # Use default branch; change to specific branch if needed
+                  ref: main
 
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
+            - name: Checkout dispatcher repository
+              uses: actions/checkout@v4
+              with:
+                  repository: Luxia-AI/dispatcher
+                  path: dispatcher
+                  ref: main
 
-      - name: Log in to GitHub Container Registry
-        uses: docker/login-action@v3
-        with:
-          registry: ${{ env.REGISTRY }}
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
+            - name: Checkout worker repository
+              uses: actions/checkout@v4
+              with:
+                  repository: Luxia-AI/worker
+                  path: worker
+                  ref: main
 
-      - name: Extract metadata for Docker
-        id: meta
-        uses: docker/metadata-action@v5
-        with:
-          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
-          tags: |
-            type=raw,value=latest
-            type=sha,prefix=,format=short
+            - name: Checkout shared repository
+              uses: actions/checkout@v4
+              with:
+                  repository: Luxia-AI/shared
+                  path: shared
+                  ref: main
 
-      - name: Build and push Docker image
-        uses: docker/build-push-action@v5
-        with:
-          # Build context is workspace root (contains all checked out repos)
-          context: .
-          file: infra/azure/Dockerfile
-          push: true
-          tags: ${{ steps.meta.outputs.tags }}
-          labels: ${{ steps.meta.outputs.labels }}
-          # Enable build cache for faster subsequent builds
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+            # =========================================================================
+            # Build and push Docker image
+            # =========================================================================
 
-      # =========================================================================
-      # Deploy to Azure App Service
-      # =========================================================================
+            - name: Set up Docker Buildx
+              uses: docker/setup-buildx-action@v3
 
-      - name: Deploy to Azure App Service
-        uses: azure/webapps-deploy@v3
-        with:
-          app-name: ${{ env.AZURE_WEBAPP_NAME }}
-          publish-profile: ${{ secrets.AZURE_PUBLISH_PROFILE }}
-          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
+            - name: Log in to GitHub Container Registry
+              uses: docker/login-action@v3
+              with:
+                  registry: ${{ env.REGISTRY }}
+                  username: ${{ github.actor }}
+                  password: ${{ secrets.GITHUB_TOKEN }}
 
-      # =========================================================================
-      # Post-deployment verification
-      # =========================================================================
+            - name: Build and push Docker image
+              uses: docker/build-push-action@v5
+              with:
+                  context: .
+                  file: infra/azure/Dockerfile
+                  push: true
+                  tags: |
+                      ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
+                      ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
+                  cache-from: type=gha
+                  cache-to: type=gha,mode=max
 
-      - name: Output deployment info
-        run: |
-          echo "=========================================="
-          echo "Deployment Complete!"
-          echo "=========================================="
-          echo "Image: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest"
-          echo "App Service: ${{ env.AZURE_WEBAPP_NAME }}"
-          echo "Commit SHA: ${{ github.sha }}"
-          echo "=========================================="
+            # =========================================================================
+            # Deploy to Azure App Service
+            # =========================================================================
+
+            - name: Deploy to Azure Web App
+              uses: azure/webapps-deploy@v3
+              with:
+                  app-name: ${{ env.AZURE_WEBAPP_NAME }}
+                  images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
+                  publish-profile: ${{ secrets.AZURE_PUBLISH_PROFILE }}
+
+            # =========================================================================
+            # Post-deployment verification
+            # =========================================================================
+
+            - name: Output deployment info
+              run: |
+                  echo "=========================================="
+                  echo "Deployment Complete"
+                  echo "=========================================="
+                  echo "Image: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}"
+                  echo "Image (latest): ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest"
+                  echo "App Service: ${{ env.AZURE_WEBAPP_NAME }}"
+                  echo "Workflow SHA: ${{ github.sha }}"
+                  if [ "${{ github.event_name }}" = "repository_dispatch" ]; then
+                    echo "Triggered by: ${{ github.event.client_payload.service }}"
+                  fi
+                  echo "=========================================="
