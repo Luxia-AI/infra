@@ -80,4 +80,3 @@ EXPOSE 8000
 
 # Use the startup script to launch all services
 CMD ["/bin/bash", "/app/start.sh"]
-
