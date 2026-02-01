@@ -22,9 +22,6 @@ on:
     push:
         branches:
             - main
-        paths:
-            - "azure/**"
-            - ".github/workflows/deploy-azure.yml"
 
     # Triggered by service repos via repository_dispatch
     repository_dispatch:
