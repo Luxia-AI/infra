@@ -87,22 +87,22 @@ jobs:
               with:
                   repository: Luxia-AI/socket-hub
                   path: socket-hub
-                  # Use default branch; change to specific branch if needed
-                  ref: main
+                  # Use dev branch for latest features
+                  ref: dev
 
             - name: Checkout dispatcher repository
               uses: actions/checkout@v4
               with:
                   repository: Luxia-AI/dispatcher
                   path: dispatcher
-                  ref: main
+                  ref: dev
 
             - name: Checkout worker repository
               uses: actions/checkout@v4
               with:
                   repository: Luxia-AI/worker
                   path: worker
-                  ref: main
+                  ref: feature/develop-evidence-validation-&-admin-approval
 
             - name: Checkout shared repository
               uses: actions/checkout@v4
