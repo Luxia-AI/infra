@@ -21,17 +21,22 @@ ENV PYTHONDONTWRITEBYTECODE=1
 WORKDIR /app
 
 # Install system dependencies required by some Python packages
-# - gcc, g++: Required for compiling some Python packages
-# - curl: Useful for health checks
+# - gcc, g++, cmake, make: Required for compiling llama-cpp-python
+# - curl: Useful for health checks and model download
 # - playwright deps will be installed separately if needed
 RUN apt-get update && apt-get install -y --no-install-recommends \
     gcc \
     g++ \
+    cmake \
+    make \
     curl \
     && rm -rf /var/lib/apt/lists/*
 
 # Copy requirements first for better Docker layer caching
 COPY infra/azure/requirements.txt /app/requirements.txt
+
+# Set environment variables for llama-cpp-python CPU build (no CUDA)
+ENV CMAKE_ARGS="-DGGML_BLAS=OFF -DGGML_CUDA=OFF"
 
 # Install Python dependencies
 # Using --no-cache-dir to reduce image size
@@ -40,6 +45,12 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Install playwright browsers (required by worker for web scraping)
 # This is done after pip install to leverage caching
 RUN playwright install --with-deps chromium
+
+# Download Qwen2-0.5B-Instruct GGUF model (~350MB) for local LLM inference
+# This allows LOW priority tasks to run without Groq API calls
+RUN mkdir -p /app/models && \
+    curl -L -o /app/models/qwen2-0_5b-instruct-q4_k_m.gguf \
+    "https://huggingface.co/Qwen/Qwen2-0.5B-Instruct-GGUF/resolve/main/qwen2-0_5b-instruct-q4_k_m.gguf"
 
 # =============================================================================
 # Copy application code
@@ -69,6 +80,12 @@ RUN chmod +x /app/start.sh
 # Add all service directories to PYTHONPATH so imports work correctly
 # This allows each service to import from its own 'app' module
 ENV PYTHONPATH="/app/socket-hub:/app/dispatcher:/app/worker:/app/shared:${PYTHONPATH}"
+
+# Local LLM configuration (Qwen2-0.5B for entity extraction, fact extraction)
+ENV LOCAL_LLM_MODEL_PATH=/app/models/qwen2-0_5b-instruct-q4_k_m.gguf \
+    LOCAL_LLM_CONTEXT_SIZE=2048 \
+    LOCAL_LLM_THREADS=4 \
+    LOCAL_LLM_MAX_TOKENS=512
 
 # Azure App Service expects the app to listen on port 8000
 # WEBSITES_PORT is configured in Azure, but we also set it here for clarity
