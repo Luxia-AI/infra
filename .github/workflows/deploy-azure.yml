@@ -112,6 +112,18 @@ jobs:
                   ref: main
 
             # =========================================================================
+            # Generate unique image tag
+            # =========================================================================
+
+            - name: Generate image tag
+              id: tag
+              run: |
+                  # Use run_id for uniqueness (different for each workflow run)
+                  TAG="run-${{ github.run_id }}"
+                  echo "tag=$TAG" >> $GITHUB_OUTPUT
+                  echo "Generated tag: $TAG"
+
+            # =========================================================================
             # Build and push Docker image
             # =========================================================================
 
@@ -132,7 +144,7 @@ jobs:
                   file: infra/azure/Dockerfile
                   push: true
                   tags: |
-                      ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
+                      ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.tag.outputs.tag }}
                       ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
                   cache-from: type=gha
                   cache-to: type=gha,mode=max
@@ -145,7 +157,7 @@ jobs:
               uses: azure/webapps-deploy@v3
               with:
                   app-name: ${{ env.AZURE_WEBAPP_NAME }}
-                  images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
+                  images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.tag.outputs.tag }}
                   publish-profile: ${{ secrets.AZURE_PUBLISH_PROFILE }}
 
             # =========================================================================
@@ -157,7 +169,7 @@ jobs:
                   echo "=========================================="
                   echo "Deployment Complete"
                   echo "=========================================="
-                  echo "Image: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}"
+                  echo "Image: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.tag.outputs.tag }}"
                   echo "Image (latest): ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest"
                   echo "App Service: ${{ env.AZURE_WEBAPP_NAME }}"
                   echo "Workflow SHA: ${{ github.sha }}"
