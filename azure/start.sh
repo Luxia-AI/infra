@@ -51,4 +51,4 @@ fi
 
 log "Starting socket-hub (foreground on :8000)..."
 cd "$BASE_PATH/socket-hub"
-exec python -m uvicorn app.main:app --host 0.0.0.0 --port 8000
+exec python -m uvicorn app.main:asgi_app --host 0.0.0.0 --port ${PORT:-8000}
