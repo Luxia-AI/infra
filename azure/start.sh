@@ -16,7 +16,11 @@ log "Luxia unified stack starting..."
 
 # Flags (default safe for Azure)
 : "${ENABLE_DISPATCHER:=false}"
-: "${ENABLE_WORKER:=false}"
+: "${ENABLE_WORKER:=true}"
+
+# Set HTTP fallback URL for socket-hub to call worker directly (same container)
+export WORKER_HTTP_URL="${WORKER_HTTP_URL:-http://localhost:8002}"
+log "Worker HTTP fallback URL: $WORKER_HTTP_URL"
 
 start_dispatcher() {
   log "Starting dispatcher (background)..."
