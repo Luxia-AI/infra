@@ -1,0 +1,19 @@
+﻿{
+  "annotations": {"list": []},
+  "editable": true,
+  "graphTooltip": 0,
+  "panels": [
+    {"type":"timeseries","title":"Service Up","gridPos":{"h":8,"w":12,"x":0,"y":0},"targets":[{"expr":"up{job=~\"dispatcher|worker|socket_hub\"}"}]},
+    {"type":"timeseries","title":"Dispatcher Jobs Received","gridPos":{"h":8,"w":12,"x":12,"y":0},"targets":[{"expr":"sum(rate(dispatcher_jobs_received_total[5m]))"}]},
+    {"type":"timeseries","title":"Worker Job Success Rate","gridPos":{"h":8,"w":12,"x":0,"y":8},"targets":[{"expr":"sum(rate(worker_jobs_completed_total[5m]))/clamp_min(sum(rate(worker_jobs_consumed_total[5m])),1)"}]},
+    {"type":"timeseries","title":"Socket Active Connections","gridPos":{"h":8,"w":12,"x":12,"y":8},"targets":[{"expr":"sockethub_connections_active"}]}
+  ],
+  "schemaVersion": 39,
+  "style": "dark",
+  "tags": ["luxia"],
+  "templating": {"list": []},
+  "time": {"from": "now-6h", "to": "now"},
+  "title": "Luxia System Overview",
+  "uid": "luxia-system-overview",
+  "version": 1
+}

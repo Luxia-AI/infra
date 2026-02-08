@@ -1,0 +1,65 @@
+﻿groups:
+  - name: luxia_recording
+    rules:
+      - record: luxia:dispatcher_error_rate_5m
+        expr: sum(rate(dispatcher_jobs_failed_total[5m])) / clamp_min(sum(rate(dispatcher_jobs_received_total[5m])), 1)
+      - record: luxia:worker_success_rate_5m
+        expr: sum(rate(worker_jobs_completed_total[5m])) / clamp_min(sum(rate(worker_jobs_consumed_total[5m])), 1)
+      - record: luxia:worker_p95_job_duration_5m
+        expr: histogram_quantile(0.95, sum(rate(worker_job_duration_seconds_bucket[5m])) by (le))
+
+  - name: luxia_alerts
+    rules:
+      - alert: ServiceDown
+        expr: up{job=~"dispatcher|worker|socket_hub"} == 0
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Service down: {{ $labels.job }}"
+          description: "Prometheus target {{ $labels.instance }} is down."
+
+      - alert: DispatcherHighErrorRate
+        expr: luxia:dispatcher_error_rate_5m > 0.05
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Dispatcher error rate is high"
+          description: "5m dispatcher error rate above 5%."
+
+      - alert: WorkerNoCompletions
+        expr: sum(increase(worker_jobs_completed_total[10m])) < 1
+        for: 10m
+        labels:
+          severity: critical
+        annotations:
+          summary: "No worker completions in 10m"
+          description: "Worker has not completed jobs in the last 10 minutes."
+
+      - alert: WorkerFallbackSpike
+        expr: sum(increase(worker_fallback_total[10m])) > 5
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Worker fallback usage spike"
+          description: "Worker fallback path triggered frequently."
+
+      - alert: KafkaLagHigh
+        expr: sum(kafka_consumergroup_lag) > 200
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Kafka lag high"
+          description: "Total Kafka consumer lag is above threshold."
+
+      - alert: RedisMemoryPressure
+        expr: redis_memory_used_bytes / clamp_min(redis_total_system_memory_bytes, 1) > 0.85
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Redis memory pressure"
+          description: "Redis memory usage above 85%."

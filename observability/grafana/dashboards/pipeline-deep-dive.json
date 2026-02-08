@@ -1,0 +1,19 @@
+﻿{
+  "annotations": {"list": []},
+  "editable": true,
+  "graphTooltip": 0,
+  "panels": [
+    {"type":"timeseries","title":"Worker Stage Duration p95","gridPos":{"h":8,"w":12,"x":0,"y":0},"targets":[{"expr":"histogram_quantile(0.95, sum(rate(worker_stage_duration_seconds_bucket[5m])) by (le, stage))"}]},
+    {"type":"timeseries","title":"Worker Job Duration p95","gridPos":{"h":8,"w":12,"x":12,"y":0},"targets":[{"expr":"histogram_quantile(0.95, sum(rate(worker_job_duration_seconds_bucket[5m])) by (le))"}]},
+    {"type":"timeseries","title":"Worker Fallback Rate","gridPos":{"h":8,"w":12,"x":0,"y":8},"targets":[{"expr":"sum(rate(worker_fallback_total[5m]))"}]},
+    {"type":"timeseries","title":"Worker In-flight Jobs","gridPos":{"h":8,"w":12,"x":12,"y":8},"targets":[{"expr":"worker_jobs_in_flight"}]}
+  ],
+  "schemaVersion": 39,
+  "style": "dark",
+  "tags": ["luxia", "worker"],
+  "templating": {"list": []},
+  "time": {"from": "now-6h", "to": "now"},
+  "title": "Luxia Pipeline Deep Dive",
+  "uid": "luxia-pipeline-deep-dive",
+  "version": 1
+}

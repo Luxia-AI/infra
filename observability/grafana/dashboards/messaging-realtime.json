@@ -1,0 +1,19 @@
+﻿{
+  "annotations": {"list": []},
+  "editable": true,
+  "graphTooltip": 0,
+  "panels": [
+    {"type":"timeseries","title":"Kafka Consumer Lag","gridPos":{"h":8,"w":12,"x":0,"y":0},"targets":[{"expr":"sum(kafka_consumergroup_lag)"}]},
+    {"type":"timeseries","title":"Kafka Messages In","gridPos":{"h":8,"w":12,"x":12,"y":0},"targets":[{"expr":"sum(rate(kafka_topic_partition_current_offset[5m]))"}]},
+    {"type":"timeseries","title":"Socket Worker Events","gridPos":{"h":8,"w":12,"x":0,"y":8},"targets":[{"expr":"sum by (event_type)(rate(sockethub_worker_events_forwarded_total[5m]))"}]},
+    {"type":"timeseries","title":"Socket Publish Failures","gridPos":{"h":8,"w":12,"x":12,"y":8},"targets":[{"expr":"sum(rate(sockethub_post_publish_failures_total[5m]))"}]}
+  ],
+  "schemaVersion": 39,
+  "style": "dark",
+  "tags": ["luxia", "messaging"],
+  "templating": {"list": []},
+  "time": {"from": "now-6h", "to": "now"},
+  "title": "Luxia Messaging and Realtime",
+  "uid": "luxia-messaging-realtime",
+  "version": 1
+}

@@ -1,0 +1,19 @@
+﻿{
+  "annotations": {"list": []},
+  "editable": true,
+  "graphTooltip": 0,
+  "panels": [
+    {"type":"timeseries","title":"CPU Usage (containers)","gridPos":{"h":8,"w":12,"x":0,"y":0},"targets":[{"expr":"sum(rate(container_cpu_usage_seconds_total{name!~\"^$\"}[5m]))"}]},
+    {"type":"timeseries","title":"Memory Usage (containers)","gridPos":{"h":8,"w":12,"x":12,"y":0},"targets":[{"expr":"sum(container_memory_usage_bytes{name!~\"^$\"})"}]},
+    {"type":"timeseries","title":"Redis Memory Used","gridPos":{"h":8,"w":12,"x":0,"y":8},"targets":[{"expr":"redis_memory_used_bytes"}]},
+    {"type":"timeseries","title":"Container Restarts","gridPos":{"h":8,"w":12,"x":12,"y":8},"targets":[{"expr":"sum(increase(container_start_time_seconds[1h]))"}]}
+  ],
+  "schemaVersion": 39,
+  "style": "dark",
+  "tags": ["luxia", "infra"],
+  "templating": {"list": []},
+  "time": {"from": "now-6h", "to": "now"},
+  "title": "Luxia Infrastructure",
+  "uid": "luxia-infrastructure",
+  "version": 1
+}

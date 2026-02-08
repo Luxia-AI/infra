@@ -1,0 +1,16 @@
+﻿{
+  "annotations": {"list": []},
+  "editable": true,
+  "graphTooltip": 0,
+  "panels": [
+    {"type":"logs","title":"Recent Errors (Loki)","gridPos":{"h":12,"w":24,"x":0,"y":0},"targets":[{"datasource":{"type":"loki","uid":"Loki"},"expr":"{service=~\"socket-hub|dispatcher|worker\"} |= \"ERROR\""}]}
+  ],
+  "schemaVersion": 39,
+  "style": "dark",
+  "tags": ["luxia", "logs", "traces"],
+  "templating": {"list": []},
+  "time": {"from": "now-6h", "to": "now"},
+  "title": "Luxia Logs and Traces",
+  "uid": "luxia-logs-traces",
+  "version": 1
+}

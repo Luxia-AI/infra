@@ -1,0 +1,11 @@
+﻿apiVersion: 1
+
+providers:
+  - name: Luxia Dashboards
+    orgId: 1
+    folder: Luxia
+    type: file
+    disableDeletion: false
+    updateIntervalSeconds: 30
+    options:
+      path: /var/lib/grafana/dashboards
