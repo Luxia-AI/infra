@@ -78,9 +78,9 @@ COPY shared/ /app/shared/
 COPY infra/azure/start.sh /app/start.sh
 RUN chmod +x /app/start.sh
 
-# Copy single-container ingress/process-manager configs
-COPY nginx/nginx.conf /etc/nginx/nginx.conf
-COPY supervisord/supervisord.conf /etc/supervisor/conf.d/supervisord.conf
+# Copy single-container ingress/process-manager configs (kept under infra/azure for CI context safety)
+COPY infra/azure/nginx/nginx.conf /etc/nginx/nginx.conf
+COPY infra/azure/supervisord/supervisord.conf /etc/supervisor/conf.d/supervisord.conf
 
 # =============================================================================
 # Environment setup
@@ -88,7 +88,7 @@ COPY supervisord/supervisord.conf /etc/supervisor/conf.d/supervisord.conf
 
 # Add repo root to PYTHONPATH so shared package imports resolve (shared.metrics).
 # Service directories are kept for explicit module resolution.
-ENV PYTHONPATH="/app:/app/socket-hub:/app/dispatcher:/app/worker:/app/shared:${PYTHONPATH}"
+ENV PYTHONPATH="/app:/app/socket-hub:/app/dispatcher:/app/worker:/app/shared"
 
 # Local LLM configuration (Qwen2-0.5B for entity extraction, fact extraction)
 ENV LOCAL_LLM_MODEL_PATH=/app/models/qwen2-0_5b-instruct-q4_k_m.gguf \
