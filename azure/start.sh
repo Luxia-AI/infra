@@ -14,6 +14,10 @@ fi
 log "Base path: $BASE_PATH"
 log "Luxia unified stack starting..."
 
+# Ensure shared package imports resolve for all launched services.
+export PYTHONPATH="${BASE_PATH}:${BASE_PATH}/socket-hub:${BASE_PATH}/dispatcher:${BASE_PATH}/worker:${BASE_PATH}/shared:${PYTHONPATH}"
+log "PYTHONPATH set for shared imports"
+
 # Flags (default safe for Azure)
 : "${ENABLE_DISPATCHER:=false}"
 : "${ENABLE_WORKER:=true}"
@@ -55,4 +59,4 @@ fi
 
 log "Starting socket-hub (foreground on :8000)..."
 cd "$BASE_PATH/socket-hub"
-exec python -m uvicorn app.main:asgi_app --host 0.0.0.0 --port ${PORT:-8000}
+exec python -m uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8000}

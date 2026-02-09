@@ -77,9 +77,9 @@ RUN chmod +x /app/start.sh
 # Environment setup
 # =============================================================================
 
-# Add all service directories to PYTHONPATH so imports work correctly
-# This allows each service to import from its own 'app' module
-ENV PYTHONPATH="/app/socket-hub:/app/dispatcher:/app/worker:/app/shared:${PYTHONPATH}"
+# Add repo root to PYTHONPATH so shared package imports resolve (shared.metrics).
+# Service directories are kept for explicit module resolution.
+ENV PYTHONPATH="/app:/app/socket-hub:/app/dispatcher:/app/worker:/app/shared:${PYTHONPATH}"
 
 # Local LLM configuration (Qwen2-0.5B for entity extraction, fact extraction)
 ENV LOCAL_LLM_MODEL_PATH=/app/models/qwen2-0_5b-instruct-q4_k_m.gguf \
