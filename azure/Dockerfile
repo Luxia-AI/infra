@@ -16,6 +16,9 @@ FROM python:3.11-slim
 ENV PYTHONUNBUFFERED=1
 # Prevent Python from writing .pyc files
 ENV PYTHONDONTWRITEBYTECODE=1
+ENV APP_ENV=prod
+ENV SERVICE_VERSION=1.0.0
+ENV WEBSITES_PORT=80
 
 # Set working directory
 WORKDIR /app
@@ -29,6 +32,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     g++ \
     cmake \
     make \
+    nginx \
+    supervisor \
     curl \
     && rm -rf /var/lib/apt/lists/*
 
@@ -73,6 +78,10 @@ COPY shared/ /app/shared/
 COPY infra/azure/start.sh /app/start.sh
 RUN chmod +x /app/start.sh
 
+# Copy single-container ingress/process-manager configs
+COPY nginx/nginx.conf /etc/nginx/nginx.conf
+COPY supervisord/supervisord.conf /etc/supervisor/conf.d/supervisord.conf
+
 # =============================================================================
 # Environment setup
 # =============================================================================
@@ -87,9 +96,12 @@ ENV LOCAL_LLM_MODEL_PATH=/app/models/qwen2-0_5b-instruct-q4_k_m.gguf \
     LOCAL_LLM_THREADS=4 \
     LOCAL_LLM_MAX_TOKENS=512
 
-# Azure App Service expects the app to listen on port 8000
-# WEBSITES_PORT is configured in Azure, but we also set it here for clarity
-EXPOSE 8000
+# Create prometheus multiprocess dirs used by supervisord-managed apps
+RUN mkdir -p /tmp/prometheus/socket-hub /tmp/prometheus/dispatcher /tmp/prometheus/worker \
+    && chmod -R 777 /tmp/prometheus
+
+# Azure App Service single-container ingress port
+EXPOSE 80
 
 # =============================================================================
 # Startup
