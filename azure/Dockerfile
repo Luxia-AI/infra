@@ -23,9 +23,8 @@ ENV WEBSITES_PORT=80
 # Set working directory
 WORKDIR /app
 
-# Install system dependencies required by some Python packages
-# - gcc, g++, cmake, make: Required for compiling llama-cpp-python
-# - curl: Useful for health checks and model download
+# Install system dependencies required by runtime services
+# - curl: Useful for health checks
 # - playwright deps will be installed separately if needed
 RUN apt-get update && apt-get install -y --no-install-recommends \
     gcc \
@@ -40,9 +39,6 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 # Copy requirements first for better Docker layer caching
 COPY infra/azure/requirements.txt /app/requirements.txt
 
-# Set environment variables for llama-cpp-python CPU build (no CUDA)
-ENV CMAKE_ARGS="-DGGML_BLAS=OFF -DGGML_CUDA=OFF"
-
 # Install Python dependencies
 # Using --no-cache-dir to reduce image size
 RUN pip install --no-cache-dir -r requirements.txt
@@ -50,12 +46,6 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Install playwright browsers (required by worker for web scraping)
 # This is done after pip install to leverage caching
 RUN playwright install --with-deps chromium
-
-# Download Qwen2-0.5B-Instruct GGUF model (~350MB) for local LLM inference
-# This allows LOW priority tasks to run without Groq API calls
-RUN mkdir -p /app/models && \
-    curl -L -o /app/models/qwen2-0_5b-instruct-q4_k_m.gguf \
-    "https://huggingface.co/Qwen/Qwen2-0.5B-Instruct-GGUF/resolve/main/qwen2-0_5b-instruct-q4_k_m.gguf"
 
 # =============================================================================
 # Copy application code
@@ -90,12 +80,6 @@ COPY infra/azure/supervisord/supervisord.conf /etc/supervisor/conf.d/supervisord
 # Service directories are kept for explicit module resolution.
 ENV PYTHONPATH="/app:/app/socket-hub:/app/dispatcher:/app/worker:/app/shared"
 
-# Local LLM configuration (Qwen2-0.5B for entity extraction, fact extraction)
-ENV LOCAL_LLM_MODEL_PATH=/app/models/qwen2-0_5b-instruct-q4_k_m.gguf \
-    LOCAL_LLM_CONTEXT_SIZE=2048 \
-    LOCAL_LLM_THREADS=4 \
-    LOCAL_LLM_MAX_TOKENS=512
-
 # Create prometheus multiprocess dirs used by supervisord-managed apps
 RUN mkdir -p /tmp/prometheus/socket-hub /tmp/prometheus/dispatcher /tmp/prometheus/worker \
     && chmod -R 777 /tmp/prometheus
@@ -109,4 +93,3 @@ EXPOSE 80
 
 # Use the startup script to launch all services
 CMD ["/bin/bash", "/app/start.sh"]
-
