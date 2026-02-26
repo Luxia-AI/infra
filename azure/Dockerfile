@@ -61,6 +61,9 @@ COPY dispatcher/ /app/dispatcher/
 # Copy worker service
 COPY worker/ /app/worker/
 
+# Copy control-plane-api service
+COPY control-plane-api/ /app/control-plane-api/
+
 # Copy shared library (internal imports)
 COPY shared/ /app/shared/
 
@@ -78,10 +81,10 @@ COPY infra/azure/supervisord/supervisord.conf /etc/supervisor/conf.d/supervisord
 
 # Add repo root to PYTHONPATH so shared package imports resolve (shared.metrics).
 # Service directories are kept for explicit module resolution.
-ENV PYTHONPATH="/app:/app/socket-hub:/app/dispatcher:/app/worker:/app/shared"
+ENV PYTHONPATH="/app:/app/socket-hub:/app/dispatcher:/app/worker:/app/control-plane-api:/app/shared"
 
 # Create prometheus multiprocess dirs used by supervisord-managed apps
-RUN mkdir -p /tmp/prometheus/socket-hub /tmp/prometheus/dispatcher /tmp/prometheus/worker \
+RUN mkdir -p /tmp/prometheus/socket-hub /tmp/prometheus/dispatcher /tmp/prometheus/worker /tmp/prometheus/control-plane-api \
     && chmod -R 777 /tmp/prometheus
 
 # Azure App Service single-container ingress port

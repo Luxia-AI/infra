@@ -9,10 +9,10 @@ export SERVICE_VERSION="${SERVICE_VERSION:-1.0.0}"
 export WEBSITES_PORT="${WEBSITES_PORT:-80}"
 
 # Ensure shared package imports resolve for all services.
-export PYTHONPATH="${BASE_PATH}:${BASE_PATH}/socket-hub:${BASE_PATH}/dispatcher:${BASE_PATH}/worker:${BASE_PATH}/shared:${PYTHONPATH:-}"
+export PYTHONPATH="${BASE_PATH}:${BASE_PATH}/socket-hub:${BASE_PATH}/dispatcher:${BASE_PATH}/worker:${BASE_PATH}/control-plane-api:${BASE_PATH}/shared:${PYTHONPATH:-}"
 
-mkdir -p /tmp/prometheus/socket-hub /tmp/prometheus/dispatcher /tmp/prometheus/worker
-rm -f /tmp/prometheus/socket-hub/* /tmp/prometheus/dispatcher/* /tmp/prometheus/worker/* || true
+mkdir -p /tmp/prometheus/socket-hub /tmp/prometheus/dispatcher /tmp/prometheus/worker /tmp/prometheus/control-plane-api
+rm -f /tmp/prometheus/socket-hub/* /tmp/prometheus/dispatcher/* /tmp/prometheus/worker/* /tmp/prometheus/control-plane-api/* || true
 
 log "Base path: ${BASE_PATH}"
 log "APP_ENV=${APP_ENV} SERVICE_VERSION=${SERVICE_VERSION} WEBSITES_PORT=${WEBSITES_PORT}"
