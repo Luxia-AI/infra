@@ -5,7 +5,7 @@
 # and deploys it to Azure App Service.
 #
 # Architecture:
-#   - Checks out multiple repos (socket-hub, dispatcher, worker, shared)
+#   - Checks out multiple repos (socket-hub, dispatcher, worker, control-plane-api, shared)
 #   - Builds single container with all services
 #   - Pushes to GitHub Container Registry (ghcr.io)
 #   - Deploys to Azure App Service (luxia-backend)
@@ -99,6 +99,13 @@ jobs:
               with:
                   repository: Luxia-AI/worker
                   path: worker
+                  ref: main
+
+            - name: Checkout control-plane-api repository
+              uses: actions/checkout@v4
+              with:
+                  repository: Luxia-AI/control-plane-api
+                  path: control-plane-api
                   ref: main
 
             - name: Checkout shared repository
