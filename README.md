@@ -8,7 +8,7 @@
 - `infra/observability`: Prometheus/Grafana/Loki/Tempo/Alertmanager/OTel configs
 - `infra/k8s`: Kubernetes placeholders (currently empty manifests)
 - `infra/terraform`: Terraform placeholder (currently empty)
-- `infra/ci-cd`: CI/CD support artifacts
+- `infra/ci-cd`: CI/CD support artefacts
 
 ## Canonical Docs
 
